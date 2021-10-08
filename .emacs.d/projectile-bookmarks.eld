@@ -1,0 +1,1 @@
+("~/Code/dotnet/newKarma/Karma/" "~/" "~/Code/dotnet/Karma/" "~/Code/go/hash-adam-fork/")
