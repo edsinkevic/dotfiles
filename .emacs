@@ -20,8 +20,8 @@
 
 (menu-bar-mode -1)            ; Disable the menu bar
 
-(set-frame-parameter (selected-frame) 'alpha '(90 . 50))
-(add-to-list 'default-frame-alist '(alpha . (90 . 50)))
+(set-frame-parameter (selected-frame) 'alpha '(90 . 80))
+(add-to-list 'default-frame-alist '(alpha . (90 . 80)))
 
 (column-number-mode)
 (global-display-line-numbers-mode t)
@@ -135,7 +135,9 @@
     :global-prefix "C-SPC")
   (diso/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "j"  '(counsel-switch-buffer :which-key "switch buffer")))
+    "j"  '(counsel-switch-buffer :which-key "switch buffer")
+    "x"  '(kill-current-buffer :which-key "kill current buffer")
+    "tm" '(counsel-load-theme :which-key "change theme")))
 
 (use-package evil
   :init
@@ -202,6 +204,9 @@
          (csharp-mode . lsp)
 	 (c++-mode . lsp)
 	 (go-mode . lsp)
+	 (haskell-mode . lsp)
+	 (c-mode . lsp)
+	 (scala-mode . lsp)
          ;; if you want which-key integration
          (lsp-mode . lsp-enable-which-key-integration))
   :commands lsp)
@@ -239,3 +244,14 @@
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package company)
+
+(require 'lsp)
+(use-package lsp-haskell)
+;; Hooks so haskell and literate haskell major modes trigger LSP setup
+(add-hook 'haskell-mode-hook #'lsp)
+(add-hook 'haskell-literate-mode-hook #'lsp)
+
+(use-package sql)
+(use-package scala-mode
+  :interpreter
+  ("scala" . scala-mode))
