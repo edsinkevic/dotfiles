@@ -16,8 +16,6 @@
 (setq custom-file "~/.emacs.custom.el")
 (load custom-file)
 
-(require 'org)
-
 (menu-bar-mode -1)            ; Disable the menu bar
 
 (set-frame-parameter (selected-frame) 'alpha '(90 . 80))
@@ -26,25 +24,8 @@
 (column-number-mode)
 (global-display-line-numbers-mode t)
 
-;; Disable numbers for some modes
-;;(dolist (mode '(org-mode-hook
-		;;term-mode-hook
-		;;shell-mode-hook
-		;;eshell-mode-hook
-		;;interactive-haskell-mode))
-  ;;(add-hook mode (lambda () (display-line-numbers-mode 0))))
+(set-face-attribute 'default nil :font "Fira Code" :height 120)
 
-;; Set up the visible bell
-(setq visible-bell t)
-
-(set-face-attribute 'default nil :font "Source Code Pro" :height 120)
-
-(load-theme 'doom-horizon t)
-
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-
-;; Initialize package sources
 (require 'package)
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -62,8 +43,42 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-(use-package command-log-mode)
+(use-package evil
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-C-i-jump nil)
+  :config
+  (evil-mode 1)
+  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+  (define-key evil-normal-state-map (kbd "C-j") 'evil-scroll-down)
+  (define-key evil-normal-state-map (kbd "C-k") 'evil-scroll-up)
 
+  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal))
+
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
+
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 15)))
+
+(use-package doom-themes)
+(load-theme 'doom-horizon t)
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package swiper :ensure t)
 (use-package ivy
   :diminish
 
@@ -83,20 +98,9 @@
   :config
   (ivy-mode 1))
 
-(use-package doom-modeline
-  :ensure t
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
-
-(use-package doom-themes)
-
-;;(use-package haskell-mode)
-;;(require 'haskell-interactive-mode)
-;;(require 'haskell-process)
-;;(add-hook 'haskell-mode-hook 'interactive-haskell-mode)
-
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
 
 (use-package which-key
   :init (which-key-mode)
@@ -111,10 +115,6 @@
          ("C-x C-f" . counsel-find-file)
          :map minibuffer-local-map
          ("C-r" . 'counsel-minibuffer-history)))
-
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
 
 (use-package helpful
   :custom
@@ -139,37 +139,6 @@
     "x"  '(kill-current-buffer :which-key "kill current buffer")
     "tm" '(counsel-load-theme :which-key "change theme")))
 
-(use-package evil
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-C-i-jump nil)
-  :config
-  (evil-mode 1)
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-  (define-key evil-normal-state-map (kbd "C-j") 'evil-scroll-down)
-  (define-key evil-normal-state-map (kbd "C-k") 'evil-scroll-up)
-
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
-
-;;(dolist (mode '(org-mode-hook
-;;		term-mode-hook
-;;		shell-mode-hook
-;;		eshell-mode-hook
-;;		interactive-haskell-mode))
-;;  (add-to-list 'evil-emacs-state-modes mode))
-
-(use-package evil-collection
-  :after evil
-  :config
-  (evil-collection-init))
-
 (use-package hydra)
 (defhydra hydra-text-scale (:timeout 4)
   "scale text"
@@ -178,50 +147,7 @@
   ("f" nil "finished" :exit t))
 
 (diso/leader-keys
-  "ts" '(hydra-text-scale/body :which-key "scale text")
-  "a"  '(auto-complete-mode :which-key "enables auto-complete-mode"))
-
-(use-package auto-complete)
-
-(add-to-list 'load-path "~/.elisp/autopair") ;; comment if autopair.el is in standard load path 
-(require 'autopair)
-(electric-pair-mode)
-(use-package csharp-mode)
-
-(use-package smartparens)
-(require 'smartparens-config)
-(global-set-key (kbd "C-q") 'sp-wrap-round)
-
-(use-package web-mode)
-(use-package markdown-mode)
-(use-package go-mode)
-
-(use-package lsp-mode
-  :init
-  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
-  (setq lsp-keymap-prefix "C-c l")
-  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
-         (csharp-mode . lsp)
-	 (c++-mode . lsp)
-	 (go-mode . lsp)
-	 (haskell-mode . lsp)
-	 (c-mode . lsp)
-	 (scala-mode . lsp)
-         ;; if you want which-key integration
-         (lsp-mode . lsp-enable-which-key-integration))
-  :commands lsp)
-
-;; optionally
-(use-package lsp-ui :commands lsp-ui-mode)
-;; if you are helm user
-(use-package helm-lsp :commands helm-lsp-workspace-symbol)
-;; if you are ivy user
-(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
-(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
-
-;; optionally if you want to use debugger
-(use-package dap-mode)
-;; (use-package dap-LANGUAGE) to load the dap adapter for your language
+  "ts" '(hydra-text-scale/body :which-key "scale text"))
 
 (use-package projectile
   :diminish projectile-mode
@@ -242,16 +168,3 @@
   :commands (magit-status magit-get-current-branch)
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-(use-package company)
-
-(require 'lsp)
-(use-package lsp-haskell)
-;; Hooks so haskell and literate haskell major modes trigger LSP setup
-(add-hook 'haskell-mode-hook #'lsp)
-(add-hook 'haskell-literate-mode-hook #'lsp)
-
-(use-package sql)
-(use-package scala-mode
-  :interpreter
-  ("scala" . scala-mode))

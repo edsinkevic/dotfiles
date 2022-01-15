@@ -8,7 +8,7 @@
 [[ -f ~/.welcome_screen ]] && . ~/.welcome_screen
 
 _set_my_PS1() {
-    PS1='\e[1;35m[\u@\h \W]\$ \e[0m'
+    PS1='\[\e[1;35m\][\u@\h \W]\$ \[\e[0m\]'
     if [ "$(whoami)" = "liveuser" ] ; then
         local iso_version="$(grep ^VERSION= /usr/lib/endeavouros-release 2>/dev/null | cut -d '=' -f 2)"
         if [ -n "$iso_version" ] ; then
@@ -177,6 +177,8 @@ _Pacdiff() {
     fi
 }
 
+
+
 #------------------------------------------------------------
 
 ## Aliases for the functions above.
@@ -185,12 +187,38 @@ _Pacdiff() {
 
 # alias ef='_open_files_for_editing'     # 'ef' opens given file(s) for editing
 # alias pacdiff=_Pacdiff
+
 ################################################################################
 export PATH=/home/edvin/.local/bin:$PATH
+
+if [ -d "$HOME/Code/bash/scripts" ] ; then
+    export PATH="$HOME/Code/bash/scripts:$PATH"
+fi
+
+if [ -d "$HOME/disobin/psx/toolchain/mipsel-unknown-elf/bin" ] ; then
+    export PATH="$HOME/disobin/psx/toolchain/mipsel-unknown-elf/bin:$PATH"
+fi
+
+if [ -d "$HOME/disobin/psx/sdk/bin" ] ; then
+    export PATH="$HOME/disobin/psx/sdk/bin:$PATH"
+fi
+
+if [ -d "$HOME/disobin/psx/sdk/lib/libpsn00b" ] ; then
+    export PSN00BSDK_LIBS="$HOME/disobin/psx/sdk/lib/libpsn00b"
+fi
+
+if [ -d "$HOME/Documents/dictionaries" ] ; then
+    export STARDICT_DATA_DIR="$HOME/Documents/dictionaries"
+fi
+
+export PATH="$PATH:/home/edvin/.local/share/coursier/bin"
+
 #ranger prefered editor and pager
 export VISUAL=nvim
+export EDITOR=nvim
 export PAGER=less
 export BROWSER=/usr/bin/qutebrowser
+export PSN00BSDK_TC=/home/edvin/disobin/psx/toolchain/mipsel-unknown-elf
 #shorter alias for nvim
 alias vim="nvim"
 alias extmonitorsetup="xrandr --output DP-2 --off"
@@ -199,3 +227,6 @@ alias swapescapeon="setxkbmap -option caps:swapescape"
 alias swapescapeoff="setxkbmap -option"
 alias discord='discord --no-sandbox --start-minimzed'
 alias sshdb='ssh -X edsi7351@uosis.mif.vu.lt'
+alias niggers='cmatrix'
+
+se() { du -a ~/Code/* | awk '{print $2}' | fzf | xargs -r $EDITOR ;}
