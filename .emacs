@@ -24,7 +24,7 @@
 (column-number-mode)
 (global-display-line-numbers-mode t)
 
-(set-face-attribute 'default nil :font "Fira Code" :height 120)
+(set-face-attribute 'default nil :font "Terminus" :height 120)
 
 (require 'package)
 
@@ -168,3 +168,23 @@
   :commands (magit-status magit-get-current-branch)
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+(use-package company)
+
+(use-package erlang
+  :init
+  (setq erlang-electric-commands '()))
+
+(use-package lsp-mode
+  :init
+  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+         (erlang-mode . lsp)
+         ;; if you want which-key integration
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
+(use-package lsp-ui
+  :commands lsp-ui-mode)
+(use-package lsp-ivy
+  :commands lsp-ivy-workspace-symbol)
