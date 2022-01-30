@@ -16,6 +16,7 @@ import XMonad.Actions.WindowGo (runOrRaise)
 import XMonad.Actions.WithAll (sinkAll, killAll)
 import qualified XMonad.Actions.Search as S
 import XMonad.Actions.CycleWS
+import XMonad.Actions.FindEmptyWorkspace (viewEmptyWorkspace)
 
     -- Data
 import Data.Char (isSpace, toUpper)
@@ -58,7 +59,7 @@ import XMonad.Layout.Spacing
 import XMonad.Layout.SubLayouts
 import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))
 import XMonad.Layout.WindowNavigation
-import XMonad.Layout.IndependentScreens
+import XMonad.Layout.IndependentScreens (countScreens)
 import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle))
 import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 
@@ -168,6 +169,7 @@ myKeys =
     -- KB_GROUP Workspaces
         , ("M-S-<KP_Add>", nextWS)       -- Shifts focused window to next ws
         , ("M-S-<KP_Subtract>", prevWS)  -- Shifts focused window to prev ws
+        , ("M-e", viewEmptyWorkspace)  -- Shifts focused window to prev ws
 
     -- KB_GROUP Floating windows
         , ("M-f", sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
@@ -194,7 +196,12 @@ myKeys =
     -- KB_GROUP Layouts
         , ("M-<Tab>", sendMessage NextLayout)           -- Switch to next layout
         , ("M-<Space>", sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
+
+    -- KB_GROUP Monitors
+        , ("M-M1-<Tab>", toggleExtMonitor)           -- Switch to next layout
+        , ("M-M1-S-<Tab>", toggleLapMonitor)           -- Switch to next layout
         ]
+        ++ [(otherModMasks ++ "M-" ++ [key], action tag) | (tag, key)  <- zip myWorkspaces "123456789", (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
 -- END_KEYS
 ------------------------------------------------------------------------
 -- Mouse bindings: default actions bound to mouse events
@@ -318,12 +325,14 @@ myManageHook = composeAll
 --
 -- By default, do nothing.
 myStartupHook = do
+    spawn "killall conky"
     spawn "killall trayer"  -- kill current trayer on each restart
     spawn "$HOME/Code/bash/scripts/start_picom.sh"
     spawnOnce "/usr/bin/emacs --daemon"
     spawnOnce "nm-applet &"
-    spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 6 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 " ++ colorTrayer ++ " --height 22")
-    spawnOnce "feh --bg-fill ~/.wallpapers/peakpx_colorified.jpg"  -- feh set random wallpaper
+    spawn ("sleep 2 && conky -c $HOME/.config/conky/xmonad/" ++ colorScheme ++ "-01.conkyrc")
+    spawn ("sleep 2 && trayer --edge top --align right --widthtype request --padding 6 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 " ++ "--tint 0x000000" ++ " --height 22")
+    spawn "feh --bg-fill ~/.wallpapers/peakpx_colorified.jpg"  -- feh set random wallpaper
     setWMName "LG3D"
 
 ------------------------------------------------------------------------
@@ -365,7 +374,7 @@ main = do
                 -- Title of active window
               , ppTitle = xmobarColor color16 "" . shorten 20
                 -- Separator character
-              , ppSep =  "<fc=" ++ color09 ++ "> <fn=1>|</fn> </fc>"
+              , ppSep =  "<fc=" ++ "#ffffff" ++ "> <fn=1>|</fn> </fc>"
                 -- Urgent workspace
               , ppUrgent = xmobarColor color02 "" . wrap "!" "!"
                 -- Adding # of windows on current workspace to the bar
@@ -374,3 +383,19 @@ main = do
               , ppOrder  = \(ws:l:t:ex) -> [ws,l]++ex++[t]
               }
         } `additionalKeysP` myKeys
+
+-- My functions
+
+toggleExtMonitor :: X ()
+toggleExtMonitor = do 
+    screencount <- countScreens
+    if screencount > 1
+       then spawn "xrandr --output DP-2 --off" >> myStartupHook
+     else spawn "xrandr --output DP-2 --auto --left-of DP-3" >> myStartupHook
+
+toggleLapMonitor :: X ()
+toggleLapMonitor = do 
+    screencount <- countScreens
+    if screencount > 1
+       then spawn "xrandr --output DP-3 --off" >> myStartupHook
+     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2" >> myStartupHook

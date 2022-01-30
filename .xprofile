@@ -3,7 +3,7 @@
 setxkbmap -option caps:swapescape
 
 # default config for laptop screen and G27Q
-xrandr --output DP-1 --off --output DP-2 --mode 1920x1080 --rate 60 --output HDMI-0 --off --output DP-3 --primary --mode 2560x1440 --rate 144 --output DP-4 --off
+xrandr --output DP-1 --off --output DP-2 --mode 1920x1080 --rate 60 --output HDMI-0 --off --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2 --output DP-4 --off
 # default config for TV screen
 xrandr --output HDMI-0 --auto --mode 1920x1080 --rate 120
 
