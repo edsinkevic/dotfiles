@@ -32,7 +32,7 @@ import XMonad.Hooks.ServerMode
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.WorkspaceHistory
 import XMonad.Hooks.StatusBar.PP (filterOutWsPP)
-import qualified XMonad.Hooks.StatusBar as StatusBar (withSB, statusBarProp, statusBarPropTo, StatusBarConfig, xmonadDefProp)
+import XMonad.Hooks.StatusBar (withSB, statusBarProp, statusBarPropTo, StatusBarConfig, xmonadDefProp)
 
     -- Layouts
 import XMonad.Layout.Accordion
@@ -93,18 +93,6 @@ myBorderWidth   = 1
 myFont :: String
 myFont = "xft:Mononoki:regular:size=9:antialias=true:hinting=true"
 
-windowCount :: X (Maybe String)
-windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
-
-myTabTheme = def { fontName            = myFont
-                 , activeColor         = color15
-                 , inactiveColor       = color08
-                 , activeBorderColor   = color15
-                 , inactiveBorderColor = colorBack
-                 , activeTextColor     = colorBack
-                 , inactiveTextColor   = color16
-                 }
-
 myModMask       = mod4Mask
 
 -- The default number of workspaces (virtual screens) and their names.
@@ -118,19 +106,6 @@ myModMask       = mod4Mask
 --
 myWorkspaces = [" 1 ", " 2 ", " 3 ", " 4 ", " 5 ", " 6 ", " 7 ", " 8 ", " 9 "]
 myWorkspaceIndices = M.fromList $ zip myWorkspaces [1..] -- (,) == \x y -> (x,y)
-
-clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
-    where i = fromJust $ M.lookup ws myWorkspaceIndices
-
-xpConfig :: XPConfig
-xpConfig = def
-    { font = "xft:Terminus:pixelsize=15:width=1:antialias=true:hinting=true"
-    , fgColor = "#d356a2"
-    , position = Top
-    , height = 24
-    , promptBorderWidth = 0
-    -- , searchPredicate = fuzzyMatch
-    }
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -153,7 +128,7 @@ myKeys =
         , ("M-M1-q", io exitSuccess)                   -- Quits xmonad
 
     -- KB_GROUP Run Prompt
-        , ("M-d", shellPrompt xpConfig)
+        , ("M-d", shellPrompt shellConfig)
 
     -- KB_GROUP Useful programs to have a keybinding for launch
         , ("M-<Return>", spawn myTerminal)
@@ -338,7 +313,7 @@ myStartupHook = do
 --
 main = do
     -- let sb0 = StatusBar.statusBarPropTo StatusBar.xmonadDefProp ("xmobar -x 0 $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc") $ pure myXmobarPP
-    xmonad . StatusBar.withSB (xmobarPropOnMonitor 0 <> xmobarPropOnMonitor 1) . docks $ ewmh def
+    xmonad . withSB (xmobarPropOnMonitor 0 <> xmobarPropOnMonitor 1) . docks $ ewmh def
         { manageHook         = myManageHook <+> manageDocks
                                -- Uncomment this line to enable fullscreen support on things like YouTube/Netflix.
                                --d356a2 This works perfect on SINGLE monitor systems. On multi-monitor systems,
@@ -371,6 +346,12 @@ toggleLapMonitor = do
        then spawn "xrandr --output DP-3 --off" >> myStartupHook
      else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2" >> myStartupHook
 
+windowCount :: X (Maybe String)
+windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
+
+clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
+    where i = fromJust $ M.lookup ws myWorkspaceIndices
+
 -- My configs
 
 myXmobarPP :: PP
@@ -398,6 +379,25 @@ myXmobarPP = otherBS
               , ppOrder  = \(ws:l:t:ex) -> [ws,l]++ex++[t]
               }
 
-xmobarPropOnMonitor :: Int -> StatusBar.StatusBarConfig
+xmobarPropOnMonitor :: Int -> StatusBarConfig
 xmobarPropOnMonitor monitorNumber = 
-    StatusBar.statusBarPropTo StatusBar.xmonadDefProp ("xmobar -x " ++ show monitorNumber ++ " $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc") $ pure myXmobarPP
+    statusBarPropTo xmonadDefProp ("xmobar -x " ++ show monitorNumber ++ " $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc") $ pure myXmobarPP
+
+shellConfig :: XPConfig
+shellConfig = def
+    { font = "xft:Terminus:pixelsize=15:width=1:antialias=true:hinting=true"
+    , fgColor = "#d356a2"
+    , position = Top
+    , height = 24
+    , promptBorderWidth = 0
+    -- , searchPredicate = fuzzyMatch
+    }
+
+myTabTheme = def { fontName            = myFont
+                 , activeColor         = color15
+                 , inactiveColor       = color08
+                 , activeBorderColor   = color15
+                 , inactiveBorderColor = colorBack
+                 , activeTextColor     = colorBack
+                 , inactiveTextColor   = color16
+                 }
