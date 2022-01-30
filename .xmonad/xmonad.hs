@@ -1,4 +1,3 @@
- -- Base
 import XMonad
 import System.Directory
 import System.IO (hPutStrLn)
@@ -7,7 +6,6 @@ import qualified XMonad.StackSet as W
 
     -- Actions
 import XMonad.Actions.CopyWindow (kill1)
-import XMonad.Actions.CycleWS (Direction1D(..), moveTo, shiftTo, WSType(..), nextScreen, prevScreen)
 import XMonad.Actions.GridSelect
 import XMonad.Actions.MouseResize
 import XMonad.Actions.Promote
@@ -20,9 +18,8 @@ import XMonad.Actions.FindEmptyWorkspace (viewEmptyWorkspace)
 
     -- Data
 import Data.Char (isSpace, toUpper)
-import Data.Maybe (fromJust)
+import Data.Maybe ( fromJust, isJust )
 import Data.Monoid
-import Data.Maybe (isJust)
 import Data.Tree
 import qualified Data.Map as M
 
@@ -35,6 +32,7 @@ import XMonad.Hooks.ServerMode
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.WorkspaceHistory
 import XMonad.Hooks.StatusBar.PP (filterOutWsPP)
+import qualified XMonad.Hooks.StatusBar as StatusBar (withSB, statusBarProp, statusBarPropTo, StatusBarConfig, xmonadDefProp)
 
     -- Layouts
 import XMonad.Layout.Accordion
@@ -69,15 +67,13 @@ import XMonad.Util.EZConfig (additionalKeysP)
 import XMonad.Util.NamedScratchpad
 import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
 import XMonad.Util.SpawnOnce
+import XMonad.Util.ClickableWorkspaces
 import Colors.DoomOne
 
    -- Prompts
 import XMonad.Prompt
 import XMonad.Prompt.Shell
 import XMonad.Prompt.FuzzyMatch (fuzzyMatch)
-
-import qualified XMonad.StackSet as W
-import qualified Data.Map        as M
 
 myTerminal :: String
 myTerminal      = "alacritty"
@@ -121,7 +117,7 @@ myModMask       = mod4Mask
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
 myWorkspaces = [" 1 ", " 2 ", " 3 ", " 4 ", " 5 ", " 6 ", " 7 ", " 8 ", " 9 "]
-myWorkspaceIndices = M.fromList $ zipWith (,) myWorkspaces [1..] -- (,) == \x y -> (x,y)
+myWorkspaceIndices = M.fromList $ zip myWorkspaces [1..] -- (,) == \x y -> (x,y)
 
 clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
     where i = fromJust $ M.lookup ws myWorkspaceIndices
@@ -129,11 +125,11 @@ clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
 xpConfig :: XPConfig
 xpConfig = def
     { font = "xft:Terminus:pixelsize=15:width=1:antialias=true:hinting=true"
-    , fgColor = "#d356a2" 
+    , fgColor = "#d356a2"
     , position = Top
     , height = 24
     , promptBorderWidth = 0
-    , searchPredicate = fuzzyMatch
+    -- , searchPredicate = fuzzyMatch
     }
 
 -- Border colors for unfocused and focused windows, respectively.
@@ -152,16 +148,16 @@ myFocusColor  = color15     -- This variable is imported from Colors.THEME
 myKeys :: [(String, X ())]
 myKeys =
     -- KB_GROUP Xmonad
-        [ ("M-C-r", spawn "xmonad --recompile")       -- Recompiles xmonad
-        , ("M-S-r", spawn "xmonad --restart")         -- Restarts xmonad
+        [ ("M-M1-r", spawn "xmonad --recompile")       -- Recompiles xmonad
+        , ("M-M1-S-r", spawn "xmonad --restart")         -- Restarts xmonad
         , ("M-M1-q", io exitSuccess)                   -- Quits xmonad
 
     -- KB_GROUP Run Prompt
         , ("M-d", shellPrompt xpConfig)
 
     -- KB_GROUP Useful programs to have a keybinding for launch
-        , ("M-<Return>", spawn (myTerminal))
-        , ("M-b", spawn (myBrowser))
+        , ("M-<Return>", spawn myTerminal)
+        , ("M-b", spawn myBrowser)
 
     -- KB_GROUP Kill windows
         , ("M-S-q", kill1)     -- Kill the currently focused client
@@ -201,7 +197,7 @@ myKeys =
         , ("M-M1-<Tab>", toggleExtMonitor)           -- Switch to next layout
         , ("M-M1-S-<Tab>", toggleLapMonitor)           -- Switch to next layout
         ]
-        ++ [(otherModMasks ++ "M-" ++ [key], action tag) | (tag, key)  <- zip myWorkspaces "123456789", (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
+        -- ++ [(otherModMasks ++ "M-" ++ [key], action tag) | (tag, key)  <- zip myWorkspaces "123456789", (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
 -- END_KEYS
 ------------------------------------------------------------------------
 -- Mouse bindings: default actions bound to mouse events
@@ -289,8 +285,8 @@ myShowWNameTheme = def
 
 myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats
                $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) myDefaultLayout
-    where 
-        myDefaultLayout =     withBorder myBorderWidth tall 
+    where
+        myDefaultLayout =     withBorder myBorderWidth tall
                           ||| noBorders monocle
                           ||| grid
                           ||| magnify
@@ -340,10 +336,9 @@ myStartupHook = do
 
 -- Run xmonad with the settings you specify. No need to modify this.
 --
-main = do 
-    xmproc0 <- spawnPipe ("xmobar -x 0 $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc")
-    xmproc1 <- spawnPipe ("xmobar -x 1 $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc")
-    xmonad $ docks $ ewmh def
+main = do
+    -- let sb0 = StatusBar.statusBarPropTo StatusBar.xmonadDefProp ("xmobar -x 0 $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc") $ pure myXmobarPP
+    xmonad . StatusBar.withSB (xmobarPropOnMonitor 0 <> xmobarPropOnMonitor 1) . docks $ ewmh def
         { manageHook         = myManageHook <+> manageDocks
                                -- Uncomment this line to enable fullscreen support on things like YouTube/Netflix.
                                --d356a2 This works perfect on SINGLE monitor systems. On multi-monitor systems,
@@ -358,11 +353,31 @@ main = do
         , borderWidth        = myBorderWidth
         , normalBorderColor  = myNormColor
         , focusedBorderColor = myFocusColor
-        , logHook = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag] $ xmobarPP 
-        --XMOBAR SETTINGS 
-              { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x   -- xmobar on monitor 2
-                -- Current workspace
-              , ppCurrent = xmobarColor "#d356a2" "" . wrap
+        } `additionalKeysP` myKeys
+
+-- My functions
+
+toggleExtMonitor :: X ()
+toggleExtMonitor = do
+    screencount <- countScreens
+    if screencount > 1
+       then spawn "xrandr --output DP-2 --off" >> myStartupHook
+     else spawn "xrandr --output DP-2 --auto --left-of DP-3" >> myStartupHook
+
+toggleLapMonitor :: X ()
+toggleLapMonitor = do
+    screencount <- countScreens
+    if screencount > 1
+       then spawn "xrandr --output DP-3 --off" >> myStartupHook
+     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2" >> myStartupHook
+
+-- My configs
+
+myXmobarPP :: PP
+myXmobarPP = otherBS
+    where otherBS = xmobarPP
+              { 
+                ppCurrent = xmobarColor "#d356a2" "" . wrap
                             ("<box type=Bottom width=2 mb=2 color=" ++ "#d356a2" ++ ">") "</box>"
                 -- Visible but not current workspace
               , ppVisible = xmobarColor "#d356a2" "" . clickable
@@ -372,7 +387,7 @@ main = do
                 -- Hidden workspaces (no windows)
               , ppHiddenNoWindows = xmobarColor  "#000000" ""  . clickable
                 -- Title of active window
-              , ppTitle = xmobarColor color16 "" . shorten 20
+              , ppTitle = xmobarColor color16 "" . shorten 40
                 -- Separator character
               , ppSep =  "<fc=" ++ "#ffffff" ++ "> <fn=1>|</fn> </fc>"
                 -- Urgent workspace
@@ -382,20 +397,7 @@ main = do
                 -- order of things in xmobar
               , ppOrder  = \(ws:l:t:ex) -> [ws,l]++ex++[t]
               }
-        } `additionalKeysP` myKeys
 
--- My functions
-
-toggleExtMonitor :: X ()
-toggleExtMonitor = do 
-    screencount <- countScreens
-    if screencount > 1
-       then spawn "xrandr --output DP-2 --off" >> myStartupHook
-     else spawn "xrandr --output DP-2 --auto --left-of DP-3" >> myStartupHook
-
-toggleLapMonitor :: X ()
-toggleLapMonitor = do 
-    screencount <- countScreens
-    if screencount > 1
-       then spawn "xrandr --output DP-3 --off" >> myStartupHook
-     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2" >> myStartupHook
+xmobarPropOnMonitor :: Int -> StatusBar.StatusBarConfig
+xmobarPropOnMonitor monitorNumber = 
+    StatusBar.statusBarPropTo StatusBar.xmonadDefProp ("xmobar -x " ++ show monitorNumber ++ " $HOME/.config/xmobar/" ++ colorScheme ++ "-xmobarrc") $ pure myXmobarPP
