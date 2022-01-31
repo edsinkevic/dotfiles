@@ -246,7 +246,7 @@ myStartupHook :: X ()
 myStartupHook = do
     spawn "killall conky"
     spawn "killall trayer"
-    --spawn "$HOME/Code/bash/scripts/start_picom.sh"
+    spawn "$HOME/Code/bash/scripts/start_picom.sh"
     spawnOnce "/usr/bin/emacs --daemon"
     spawnOnce "nm-applet &"
     spawn ("sleep 2 && conky -c $HOME/.config/conky/xmonad/" ++ colorScheme ++ "-01.conkyrc")
