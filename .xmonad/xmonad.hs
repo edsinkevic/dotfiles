@@ -46,7 +46,7 @@ import XMonad.Layout.Spacing
       Spacing )
 import XMonad.Layout.WindowArranger (windowArrange)
 import XMonad.Layout.WindowNavigation ( windowNavigation )
-import XMonad.Layout.IndependentScreens (countScreens)
+import XMonad.Layout.IndependentScreens (countScreens, withScreens)
 import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle))
 import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 
@@ -128,6 +128,7 @@ myKeys =
     -- KB_GROUP Useful programs to have a keybinding for launch
         , ("M-<Return>", spawn myTerminal)
         , ("M-b", spawn myBrowser)
+        , ("M-p", spawn "rofi -show drun")
 
     -- KB_GROUP Kill windows
         , ("M-S-q", kill1)     -- Kill the currently focused client
@@ -135,7 +136,7 @@ myKeys =
     -- KB_GROUP Workspaces
         , ("M-S-<KP_Add>", nextWS)       -- Shifts focused window to next ws
         , ("M-S-<KP_Subtract>", prevWS)  -- Shifts focused window to prev ws
-        , ("M-e", viewEmptyWorkspace)  -- Shifts focused window to prev ws
+        -- , ("M-e", viewEmptyWorkspace)  -- Shifts focused window to prev ws
 
     -- KB_GROUP Floating windows
         , ("M-f", sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
@@ -170,7 +171,7 @@ myKeys =
     -- KB_GROUP Language
         , ("M-m", spawn "~/Code/bash/scripts/swlang.sh")           -- Switch to next layout
         ]
-        -- ++ [(otherModMasks ++ "M-" ++ [key], action tag) | (tag, key)  <- zip myWorkspaces "123456789", (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
+        ++ [(otherModMasks ++ "M-" ++ [key], action tag) | (tag, key)  <- zip myWorkspaces "123456789", (otherModMasks, action) <- [ ("", windows . W.view), ("S-", windows . W.shift)]]
 -- END_KEYS
 ------------------------------------------------------------------------
 -- Mouse bindings: default actions bound to mouse events
@@ -254,23 +255,29 @@ myStartupHook = do
     spawn "feh --bg-fill ~/.wallpapers/peakpx_colorified.jpg"
     setWMName "LG3D"
 
+main' :: IO ()
+main' = do
+  nScreens <- countScreens
+  xmonad $ def {workspaces = withScreens nScreens (workspaces def) }
+
 main :: IO ()
-main = do
-    xmonad
-    . withSB (xmobarPropOnMonitor 0 <> xmobarPropOnMonitor 1)
-    . docks
-    $ ewmh def
-        { manageHook         = myManageHook <+> manageDocks
-        , modMask            = myModMask
-        , terminal           = myTerminal
-        , startupHook        = myStartupHook
-        , layoutHook         = myLayoutHook
-        , workspaces         = myWorkspaces
-        , borderWidth        = myBorderWidth
-        , normalBorderColor  = myNormColor
-        , focusedBorderColor = myFocusColor
-        }
-        `additionalKeysP` myKeys
+main = do 
+    countScreens >>= (\nScreens -> xmonad  
+        . withSB (xmobarPropOnAllMonitors nScreens)
+        . docks
+        $ ewmh def
+            { manageHook         = myManageHook <+> manageDocks
+            , modMask            = myModMask
+            , terminal           = myTerminal
+            , startupHook        = myStartupHook
+            , layoutHook         = myLayoutHook
+            , workspaces         = myWorkspaces
+            , borderWidth        = myBorderWidth
+            , normalBorderColor  = myNormColor
+                , focusedBorderColor = myFocusColor
+                }
+                `additionalKeysP` myKeys
+        )
 
 -- My functions
 
@@ -278,15 +285,15 @@ toggleExtMonitor :: X ()
 toggleExtMonitor = do
     screencount <- countScreens
     if screencount > (1 :: Integer)
-       then spawn "xrandr --output DP-2 --off" >> myStartupHook
-     else spawn "xrandr --output DP-2 --auto --left-of DP-3" >> myStartupHook
+       then spawn "xrandr --output DP-2 --off && pkill xmobar && xmonad --restart" >> myStartupHook
+     else spawn "xrandr --output DP-2 --auto --left-of DP-3 && xmonad --restart" >> myStartupHook
 
 toggleLapMonitor :: X ()
 toggleLapMonitor = do
     screencount <- countScreens
     if screencount > (1 :: Integer)
-       then spawn "xrandr --output DP-3 --off" >> myStartupHook
-     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2" >> myStartupHook
+       then spawn "xrandr --output DP-3 --off && pkill xmobar && xmonad --restart" >> myStartupHook
+     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2 && pkill xmobar && xmonad --restart" >> myStartupHook
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
@@ -316,6 +323,9 @@ xmobarPropOnMonitor :: Int -> StatusBarConfig
 xmobarPropOnMonitor monitorNumber =
     statusBarProp ("xmobar -x " ++ show monitorNumber ++ " $HOME/.config/xmobar/xmobarrc") $ pure xmobarPPConfig
 
+xmobarPropOnAllMonitors :: Int -> StatusBarConfig
+xmobarPropOnAllMonitors nScreens =
+    foldl (<>) (mempty :: StatusBarConfig) $ map xmobarPropOnMonitor [0..(nScreens-1)]
 
 shellConfig :: XPConfig
 shellConfig = def
