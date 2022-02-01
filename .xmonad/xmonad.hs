@@ -255,14 +255,10 @@ myStartupHook = do
     spawn "feh --bg-fill ~/.wallpapers/peakpx_colorified.jpg"
     setWMName "LG3D"
 
-main' :: IO ()
-main' = do
-  nScreens <- countScreens
-  xmonad $ def {workspaces = withScreens nScreens (workspaces def) }
-
 main :: IO ()
 main = do 
-    countScreens >>= (\nScreens -> xmonad  
+    nScreens <- countScreens
+    xmonad  
         . withSB (xmobarPropOnAllMonitors nScreens)
         . docks
         $ ewmh def
@@ -277,7 +273,6 @@ main = do
                 , focusedBorderColor = myFocusColor
                 }
                 `additionalKeysP` myKeys
-        )
 
 -- My functions
 
@@ -293,7 +288,7 @@ toggleLapMonitor = do
     screencount <- countScreens
     if screencount > (1 :: Integer)
        then spawn "xrandr --output DP-3 --off && pkill xmobar && xmonad --restart" >> myStartupHook
-     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2 && pkill xmobar && xmonad --restart" >> myStartupHook
+     else spawn "xrandr --output DP-3 --primary --mode 2560x1440 --rate 144 --right-of DP-2 && xmonad --restart" >> myStartupHook
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
